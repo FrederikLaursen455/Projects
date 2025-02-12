@@ -1,0 +1,179 @@
+// Enhedskonverter, gør brug af API call og bl.a inheritance
+
+
+using RestSharp;
+using System;
+using Newtonsoft.Json;
+using System.Collections.Generic;
+
+namespace Enhedskonverter
+{
+    class CurrencyApi : Enhedskonverter1
+    {
+        public static void Main3(string currencyInput)
+        {
+        var client = new RestClient("https://api.exchangeratesapi.io/v1/");
+        var request = new RestRequest("/latest", Method.Get);
+        request.AddQueryParameter("access_key", "Min API nøgle");
+        request.AddQueryParameter("symbols", currencyInput);
+       
+        var response = client.Execute(request);
+        var jsonResponse = JsonConvert.DeserializeObject<dynamic>(response.Content);
+
+        string baseCurrency = jsonResponse.@base;
+        var rates = jsonResponse.rates;
+
+        Console.WriteLine($"1 {baseCurrency} is {rates[currencyInput]} {currencyInput}");
+        Console.WriteLine($"10 {baseCurrency} is {rates[currencyInput] * 10} {currencyInput}");
+        Console.ReadLine();
+        }
+
+        public static void ConvertCurrency()
+        {
+            Console.Clear();
+            Console.WriteLine("See the rates for the following currency against the Euro");
+            Console.WriteLine("1. Euro");
+            Console.WriteLine("2. Dollar");
+            Console.WriteLine("3. Pounds");
+            string? readResult = Console.ReadLine();
+            if (readResult != null)
+            {
+                switch (readResult)
+                {
+                    case "1":
+                    Main3("EUR");
+                    break;
+                    case "2":
+                    Main3("USD");
+                    break;
+                    case "3":
+                    Main3("GBP");
+                    break;
+                }
+            }
+        }
+    }
+    public class Enhedskonverter1
+    {
+        public static void Main()
+        {
+            string? readResult = "";
+            string menuSelection = "";
+            do
+            {
+                {
+                    Console.Clear();
+                    Console.WriteLine("Welcome to the Tømmerby Converter program");
+                    Console.WriteLine("Below you will have the option to convert the following units");
+                    Console.WriteLine("\n1. Convert weight measurements");
+                    Console.WriteLine("2. Convert temperatures");
+                    Console.WriteLine("3. Convert currency");
+                    Console.WriteLine("Enter your selection number (or type Exit to exit the program)");
+                    readResult = Console.ReadLine();
+                    if (readResult != null)
+                    {
+                        menuSelection = readResult.ToLower();
+                    }
+                    switch (menuSelection)
+                    {
+                        case "1":
+                            MetodeafsnitKonvert.ConvertWeight();
+                            break;
+                        case "2":
+                            MetodeafsnitKonvert.ConvertTemperature();
+                            break;
+                        case "3":
+                            CurrencyApi.ConvertCurrency();
+                            break;
+                    }
+                }
+            } while (menuSelection != "exit");
+        }
+    }
+    public class MetodeafsnitKonvert : Enhedskonverter1
+    {
+        public static void ConvertWeight()
+        {
+
+            Console.WriteLine("Choose your conversion path");
+            Console.WriteLine("1. Metric to Imperial");
+            Console.WriteLine("2. Imperial to Metric");
+            string? readResult = Console.ReadLine();
+            if (readResult != null)
+                switch (readResult)
+                {
+                    case "1":
+                        MetricInput();
+                        break;
+                    case "2":
+                        ImperialInput();
+                        break;
+                }
+        }
+        public static void MetricInput()
+        {
+            Console.WriteLine("Enter the metric value in grams");
+            string? readResult = Console.ReadLine();
+            int gramsInput;
+            int.TryParse(readResult, out gramsInput);
+            float gramsDivided = gramsInput / 453.6f;
+            Console.WriteLine($"{gramsInput}g is {gramsDivided} pounds");
+            Console.ReadLine();
+        }
+        public static void ImperialInput()
+        {
+            Console.WriteLine("Enter the imperial value in pounds");
+            string? readResult = Console.ReadLine();
+            int poundsInput;
+            int.TryParse(readResult, out poundsInput);
+            float poundsMultiplied = poundsInput * 453.6f;
+            float poundsToKilos = poundsInput * 453.6f / 1000;
+            if (poundsInput > 15)
+            {
+                Console.Write($"{poundsInput} lbs is {poundsToKilos} in kilograms");
+            }
+            else
+                Console.WriteLine($"{poundsInput} lbs is {poundsMultiplied} grams");
+            Console.ReadLine();
+        }
+        public static void ConvertTemperature()
+        {
+            Console.WriteLine("Choose your conversion path");
+            Console.WriteLine("1. Celsius to fahrenheit");
+            Console.WriteLine("2. Fahrenheit to celsius");
+            string? readResult = Console.ReadLine();
+            if (readResult != null)
+                switch (readResult)
+                {
+                    case "1":
+                        CelsiusInput();
+                        break;
+                    case "2":
+                        FahrenheitInput();
+                        break;
+                    default:
+                        break;
+                }
+        }
+        public static void CelsiusInput()
+        {
+            Console.WriteLine("Enter the temperature in celsius");
+            string? readResult = Console.ReadLine();
+            int celsiusInput;
+            int.TryParse(readResult, out celsiusInput);
+            float fahrenheitFormular = (celsiusInput * 9f / 5f) + 32f;
+            Console.WriteLine($"{celsiusInput} degrees celsius is {fahrenheitFormular} degrees fahrenheit");
+            Console.ReadLine();
+        }
+        public static void FahrenheitInput()
+        {
+            Console.WriteLine("Enter the temperature in fahrenheit");
+            string? readResult = Console.ReadLine();
+            int fahrenheitInput;
+            int.TryParse(readResult, out fahrenheitInput);
+            float celsiusFormular = (fahrenheitInput - 32f) * 5f / 9f;
+            Console.WriteLine($"{fahrenheitInput} degrees fahrenheit is {celsiusFormular} degrees celsius");
+            Console.ReadLine();
+        }
+    }
+}
