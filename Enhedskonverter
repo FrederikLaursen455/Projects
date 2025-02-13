@@ -1,6 +1,5 @@
 // Enhedskonverter, gør brug af API call og bl.a inheritance
 
-
 using RestSharp;
 using System;
 using Newtonsoft.Json;
@@ -12,20 +11,21 @@ namespace Enhedskonverter
     {
         public static void Main3(string currencyInput)
         {
-        var client = new RestClient("https://api.exchangeratesapi.io/v1/");
-        var request = new RestRequest("/latest", Method.Get);
-        request.AddQueryParameter("access_key", "Min API nøgle");
-        request.AddQueryParameter("symbols", currencyInput);
-       
-        var response = client.Execute(request);
-        var jsonResponse = JsonConvert.DeserializeObject<dynamic>(response.Content);
+            var client = new RestClient("https://api.exchangeratesapi.io/v1/");
+            var request = new RestRequest("/latest", Method.Get);
+            request.AddQueryParameter("access_key", "Min api nøgle");
+            request.AddQueryParameter("symbols", currencyInput);
 
-        string baseCurrency = jsonResponse.@base;
-        var rates = jsonResponse.rates;
+            var response = client.Execute(request);
+            var jsonResponse = JsonConvert.DeserializeObject<dynamic>(response.Content);
 
-        Console.WriteLine($"1 {baseCurrency} is {rates[currencyInput]} {currencyInput}");
-        Console.WriteLine($"10 {baseCurrency} is {rates[currencyInput] * 10} {currencyInput}");
-        Console.ReadLine();
+            // Extract the base currency and exchange rate
+            string baseCurrency = jsonResponse.@base;
+            var rates = jsonResponse.rates;
+
+            Console.WriteLine($"1 {baseCurrency} is {rates[currencyInput]} {currencyInput}");
+            Console.WriteLine($"10 {baseCurrency} is {rates[currencyInput] * 10} {currencyInput}");
+            Console.ReadLine();
         }
 
         public static void ConvertCurrency()
@@ -41,14 +41,14 @@ namespace Enhedskonverter
                 switch (readResult)
                 {
                     case "1":
-                    Main3("EUR");
-                    break;
+                        Main3("EUR");
+                        break;
                     case "2":
-                    Main3("USD");
-                    break;
+                        Main3("USD");
+                        break;
                     case "3":
-                    Main3("GBP");
-                    break;
+                        Main3("GBP");
+                        break;
                 }
             }
         }
@@ -77,10 +77,10 @@ namespace Enhedskonverter
                     switch (menuSelection)
                     {
                         case "1":
-                            MetodeafsnitKonvert.ConvertWeight();
+                            WeightClassInit.ConvertWeightStarter();
                             break;
                         case "2":
-                            MetodeafsnitKonvert.ConvertTemperature();
+                            ConvertTemperatureInit.ConvertTemperatureStarter();
                             break;
                         case "3":
                             CurrencyApi.ConvertCurrency();
@@ -90,9 +90,9 @@ namespace Enhedskonverter
             } while (menuSelection != "exit");
         }
     }
-    public class MetodeafsnitKonvert : Enhedskonverter1
+    public class WeightClassInit
     {
-        public static void ConvertWeight()
+        public static void ConvertWeightStarter()
         {
 
             Console.WriteLine("Choose your conversion path");
@@ -103,13 +103,16 @@ namespace Enhedskonverter
                 switch (readResult)
                 {
                     case "1":
-                        MetricInput();
+                        MetricInputClass.MetricInput();
                         break;
                     case "2":
-                        ImperialInput();
+                        ImperialInputClass.ImperialInput();
                         break;
                 }
         }
+    }
+    public class MetricInputClass : WeightClassInit
+    {
         public static void MetricInput()
         {
             Console.WriteLine("Enter the metric value in grams");
@@ -120,6 +123,9 @@ namespace Enhedskonverter
             Console.WriteLine($"{gramsInput}g is {gramsDivided} pounds");
             Console.ReadLine();
         }
+    }
+    public class ImperialInputClass : WeightClassInit
+    {
         public static void ImperialInput()
         {
             Console.WriteLine("Enter the imperial value in pounds");
@@ -136,7 +142,11 @@ namespace Enhedskonverter
                 Console.WriteLine($"{poundsInput} lbs is {poundsMultiplied} grams");
             Console.ReadLine();
         }
-        public static void ConvertTemperature()
+    }
+
+    public class ConvertTemperatureInit
+    {
+        public static void ConvertTemperatureStarter()
         {
             Console.WriteLine("Choose your conversion path");
             Console.WriteLine("1. Celsius to fahrenheit");
@@ -146,15 +156,18 @@ namespace Enhedskonverter
                 switch (readResult)
                 {
                     case "1":
-                        CelsiusInput();
+                        CelsiusInputClass.CelsiusInput();
                         break;
                     case "2":
-                        FahrenheitInput();
+                        FahrenheitInputClass.FahrenheitInput();
                         break;
                     default:
                         break;
                 }
         }
+    }
+    public class CelsiusInputClass : ConvertTemperatureInit
+    {
         public static void CelsiusInput()
         {
             Console.WriteLine("Enter the temperature in celsius");
@@ -165,6 +178,9 @@ namespace Enhedskonverter
             Console.WriteLine($"{celsiusInput} degrees celsius is {fahrenheitFormular} degrees fahrenheit");
             Console.ReadLine();
         }
+    }
+    public class FahrenheitInputClass : ConvertTemperatureInit
+    {
         public static void FahrenheitInput()
         {
             Console.WriteLine("Enter the temperature in fahrenheit");
