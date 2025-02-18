@@ -1,9 +1,7 @@
-// Enhedskonverter, gør brug af API call og bl.a inheritance
-
+// Enhedskonverter
+// (Imperial - Metric), (Celsius - fahrenheit), valuta
 using RestSharp;
-using System;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 
 namespace Enhedskonverter
 {
@@ -13,13 +11,12 @@ namespace Enhedskonverter
         {
             var client = new RestClient("https://api.exchangeratesapi.io/v1/");
             var request = new RestRequest("/latest", Method.Get);
-            request.AddQueryParameter("access_key", "Min api nøgle");
+            request.AddQueryParameter("access_key", "Min Api Nøgle");
             request.AddQueryParameter("symbols", currencyInput);
 
             var response = client.Execute(request);
             var jsonResponse = JsonConvert.DeserializeObject<dynamic>(response.Content);
 
-            // Extract the base currency and exchange rate
             string baseCurrency = jsonResponse.@base;
             var rates = jsonResponse.rates;
 
@@ -55,10 +52,12 @@ namespace Enhedskonverter
     }
     public class Enhedskonverter1
     {
+
         public static void Main()
         {
             string? readResult = "";
             string menuSelection = "";
+
             do
             {
                 {
@@ -68,6 +67,7 @@ namespace Enhedskonverter
                     Console.WriteLine("\n1. Convert weight measurements");
                     Console.WriteLine("2. Convert temperatures");
                     Console.WriteLine("3. Convert currency");
+                    Console.WriteLine("4. Show recent conversions");
                     Console.WriteLine("Enter your selection number (or type Exit to exit the program)");
                     readResult = Console.ReadLine();
                     if (readResult != null)
@@ -85,11 +85,41 @@ namespace Enhedskonverter
                         case "3":
                             CurrencyApi.ConvertCurrency();
                             break;
+                        case "4":
+                            HistoryManager.DisplayHistory();
+                            break;
                     }
                 }
             } while (menuSelection != "exit");
         }
     }
+    // Følgende class håndterer historikindsamling, historik bliver stored i en liste
+    public static class HistoryManager
+    {
+        public static List<string> conversionHistory = new List<string>();
+
+        public static void AddToHistory(string conversionResult)
+        {
+            conversionHistory.Add(conversionResult);
+        }
+        public static void DisplayHistory()
+        {
+            if (conversionHistory.Count == 0)
+            {
+                Console.WriteLine("No conversion history available.");
+            }
+            else
+            {
+                foreach (var item in conversionHistory)
+                {
+                    Console.WriteLine(item);
+                }
+            }
+            Console.WriteLine("Press Enter to return to the main menu.");
+            Console.ReadLine();
+        }
+    }
+
     public class WeightClassInit
     {
         public static void ConvertWeightStarter()
@@ -120,8 +150,11 @@ namespace Enhedskonverter
             int gramsInput;
             int.TryParse(readResult, out gramsInput);
             float gramsDivided = gramsInput / 453.6f;
-            Console.WriteLine($"{gramsInput}g is {gramsDivided} pounds");
+            string conversionResult = $"{gramsInput}g is {gramsDivided} pounds";
+            Console.WriteLine(conversionResult);
             Console.ReadLine();
+            HistoryManager.AddToHistory(conversionResult);
+
         }
     }
     public class ImperialInputClass : WeightClassInit
@@ -134,13 +167,20 @@ namespace Enhedskonverter
             int.TryParse(readResult, out poundsInput);
             float poundsMultiplied = poundsInput * 453.6f;
             float poundsToKilos = poundsInput * 453.6f / 1000;
+            string conversionResult;
             if (poundsInput > 15)
             {
-                Console.Write($"{poundsInput} lbs is {poundsToKilos} in kilograms");
+                conversionResult = $"{poundsInput} lbs is {poundsToKilos} in kilograms";
+                Console.WriteLine(conversionResult);
             }
             else
-                Console.WriteLine($"{poundsInput} lbs is {poundsMultiplied} grams");
+            {
+                conversionResult = $"{poundsInput} lbs is {poundsMultiplied} grams";
+                Console.WriteLine(conversionResult);
+            }
             Console.ReadLine();
+
+            HistoryManager.AddToHistory(conversionResult);
         }
     }
 
@@ -175,8 +215,11 @@ namespace Enhedskonverter
             int celsiusInput;
             int.TryParse(readResult, out celsiusInput);
             float fahrenheitFormular = (celsiusInput * 9f / 5f) + 32f;
-            Console.WriteLine($"{celsiusInput} degrees celsius is {fahrenheitFormular} degrees fahrenheit");
+            string conversionResult = $"{celsiusInput} degrees celsius is {fahrenheitFormular} degrees fahrenheit";
+            Console.WriteLine(conversionResult);
             Console.ReadLine();
+
+            HistoryManager.AddToHistory(conversionResult);
         }
     }
     public class FahrenheitInputClass : ConvertTemperatureInit
@@ -188,8 +231,11 @@ namespace Enhedskonverter
             int fahrenheitInput;
             int.TryParse(readResult, out fahrenheitInput);
             float celsiusFormular = (fahrenheitInput - 32f) * 5f / 9f;
-            Console.WriteLine($"{fahrenheitInput} degrees fahrenheit is {celsiusFormular} degrees celsius");
+            string conversionResult = $"{fahrenheitInput} degrees fahrenheit is {celsiusFormular} degrees celsius";
+            Console.WriteLine(conversionResult);
             Console.ReadLine();
+
+            HistoryManager.AddToHistory(conversionResult);
         }
     }
 }
