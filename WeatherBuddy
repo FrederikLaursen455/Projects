@@ -1,0 +1,321 @@
+using RestSharp;
+using Newtonsoft.Json;
+using System.Data.SQLite;
+
+// Vejr app. Bruger API kald, CRUD med SQL-database (SQLite) til en favoritfunktion
+
+namespace WeatherAppi
+{
+    class MainMenu
+    {
+
+        public static async Task Main()
+        {
+            SQLiteDatabase.InitializeDatabase();
+
+            string? readResult;
+            string menuSelection = "";
+
+            do
+            {
+                Console.Clear();
+                Console.WriteLine("WeatherBuddy 3000");
+                Console.WriteLine("-----------------");
+                Console.WriteLine("1. Receive current weather news for a location");
+                Console.WriteLine("2. Manage favorites");
+                Console.WriteLine("Or write 'exit' to exit the program");
+                readResult = Console.ReadLine();
+                if (readResult != null)
+                {
+                    menuSelection = readResult.ToLower();
+                }
+                switch (menuSelection)
+                {
+                    case "1":
+                        Console.Clear();
+                        Console.WriteLine("1. Type in the city name");
+                        Console.WriteLine("2. Choose a city");
+                        Console.WriteLine("3. Favorite city weather info");
+                        readResult = Console.ReadLine();
+                        if (readResult != null)
+                            menuSelection = readResult.ToLower();
+                        switch (menuSelection)
+                        {
+                            case "1":
+                                await Choice1ClassCurrent.Choice1();
+                                break;
+                            case "2":
+                                await Choice2ClassCurrent.Choice2();
+                                break;
+                            case "3":
+                                await ShowFavoriteCityClass.ShowFavoriteCityWeather();
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case "2":
+                        await FavoriteManager.FavoriteController();
+                        break;
+                }
+            } while (menuSelection != "exit");
+        }
+    }
+    class ShowFavoriteCityClass : MainMenu
+    {
+        public static async Task ShowFavoriteCityWeather()
+        {
+            string favoriteCity = SQLiteDatabase.GetFavoriteCity();
+
+            if (string.IsNullOrEmpty(favoriteCity))
+            {
+                Console.WriteLine("You don't have a favorite city set yet");
+                Console.WriteLine("Do you want to update a favorite city?");
+                Console.WriteLine("1. Yes, move to favorite section");
+                Console.WriteLine("2. No, return to main menu");
+                char input = Console.ReadKey().KeyChar;
+                    Console.ReadLine();
+                    switch (input)
+                    {
+                        case '1':
+                        await FavoriteManager.FavoriteController();
+                        break;
+                        case '2':
+                        await Main();
+                        break;
+                    }
+            }
+            else 
+            {
+                Console.WriteLine($"Retrieving weather info for {favoriteCity}");
+                await WeatherApiCurrent.CurrentWeather(favoriteCity);
+            }
+            Console.ReadLine();
+        }
+    }
+    class Choice1ClassCurrent : MainMenu
+    {
+        public static async Task Choice1()
+        {
+            string? readResult;
+            Console.WriteLine("Enter a location");
+            readResult = Console.ReadLine();
+            if (readResult != null)
+            {
+                await WeatherApiCurrent.CurrentWeather(readResult);
+            }
+        }
+    }
+
+    class Choice2ClassCurrent : MainMenu
+    {
+        public static async Task Choice2()
+        {
+            int input1 = 0;
+            string? readResult;
+            Console.Clear();
+            Console.WriteLine("1. New York");
+            Console.WriteLine("2. Tokyo");
+            Console.WriteLine("3. Copenhagen");
+            Console.WriteLine("4. Nuuk");
+            Console.WriteLine("5. Madrid");
+            Console.WriteLine("6. Nairobi");
+            Console.WriteLine("7. Bangkok");
+            Console.WriteLine("8. Return to main menu");
+            readResult = Console.ReadLine();
+            switch (readResult)
+            {
+                case "1":
+                    await WeatherApiCurrent.CurrentWeather("New York");
+                    break;
+                case "2":
+                    await WeatherApiCurrent.CurrentWeather("Tokyo");
+                    break;
+                case "3":
+                    await WeatherApiCurrent.CurrentWeather("Copenhagen");
+                    break;
+                case "4":
+                    await WeatherApiCurrent.CurrentWeather("Nuuk");
+                    break;
+                case "5":
+                    await WeatherApiCurrent.CurrentWeather("Madrid");
+                    break;
+                case "6":
+                    await WeatherApiCurrent.CurrentWeather("Nairobi");
+                    break;
+                case "7":
+                    await WeatherApiCurrent.CurrentWeather("Bangkok");
+                    break;
+                case "8":
+                    readResult = "exit";
+                    break;
+            }
+            int.TryParse(readResult, out input1);
+        }
+    }
+
+    // Håndterer user input med favoritfunktionen, og kalder metoderne fra SQLDatabase classen
+
+    class FavoriteManager : MainMenu
+    {
+        public static async Task FavoriteController()
+        {
+            string? readResult = "";
+            Console.Clear();
+            Console.WriteLine("Set a city as favorite. \n-- Disclaimer: This stores your input in an SQLite Database--");
+            readResult = Console.ReadLine();
+            if (!string.IsNullOrEmpty(readResult))
+            {
+                string currentFavoriteCity = SQLiteDatabase.GetFavoriteCity();
+                if (string.IsNullOrEmpty(currentFavoriteCity))
+                {
+                    SQLiteDatabase.AddFavoriteCity(readResult);
+                    Console.WriteLine($"Successfully added {readResult} as the favorite city");
+                    Console.ReadLine();
+                }
+                else
+                {
+                    Console.WriteLine($"Favorite already exists as {currentFavoriteCity}. Do you want to update it?");
+                    Console.WriteLine("1. Yes");
+                    Console.WriteLine("2. No, return to main menu");
+                    char input = Console.ReadKey().KeyChar;
+                    Console.ReadLine();
+                    switch (input)
+                    {
+                        case '1':
+                            SQLiteDatabase.UpdateFavoriteCity(readResult);
+                            Console.WriteLine($"Favorite city updated to {readResult}");
+                            Console.ReadLine();
+                            break;
+                        case '2':
+                            await Main();
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+    }
+
+    // SQLiteDatabase class med underlæggende metoder
+
+    class SQLiteDatabase
+    {
+        private const string ConnectionString = "Data Source = favoritesCities.db;Version=3";
+
+        public static void InitializeDatabase()
+        {
+            using (var connection = new SQLiteConnection(ConnectionString))
+            {
+                connection.Open();
+                string createTableQuery = @"
+                CREATE TABLE IF NOT EXISTS FavoriteCities (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        CityName TEXT NOT NULL
+                    );
+                ";
+                using (var command = new SQLiteCommand(createTableQuery, connection))
+                {
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+        public static void AddFavoriteCity(string cityName)
+        {
+            using (var connection = new SQLiteConnection(ConnectionString))
+            {
+                connection.Open();
+                string insertQuery = "INSERT INTO FavoriteCities (CityName) VALUES (@CityName)";
+                using (var command = new SQLiteCommand(insertQuery, connection))
+                {
+                    command.Parameters.AddWithValue("@CityName", cityName);
+                    command.ExecuteNonQuery();
+
+                }
+            }
+        }
+        public static string GetFavoriteCity()
+        {
+            using (var connection = new SQLiteConnection(ConnectionString))
+            {
+                connection.Open();
+                string selectQuery = "SELECT CityName FROM FavoriteCities ORDER BY Id DESC LIMIT 1";
+                using (var command = new SQLiteCommand(selectQuery, connection))
+                {
+                    var result = command.ExecuteScalar();
+                    return result?.ToString();
+                }
+            }
+        }
+        public static void UpdateFavoriteCity(string newCityName)
+        {
+            using (var connection = new SQLiteConnection(ConnectionString))
+            {
+                connection.Open();
+                string updateQuery = "UPDATE FavoriteCities SET CityName = @CityName WHERE Id = 1";
+                using (var command = new SQLiteCommand(updateQuery, connection))
+                {
+                    command.Parameters.AddWithValue("@CityName", newCityName);
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+    }
+
+    // class med API call
+
+    class WeatherApiCurrent : MainMenu
+    {
+
+        public static async Task CurrentWeather(string input)
+        {
+            var client = new RestClient("http://api.weatherstack.com");
+            var request = new RestRequest("/current", Method.Get);
+
+            request.AddQueryParameter("access_key", "Min API nøgle. Kontakt mig for at få adgang");
+            request.AddQueryParameter("query", input);
+
+            var response = await client.ExecuteAsync(request);
+            if (response.IsSuccessful)
+            {
+                var jsonResponse = JsonConvert.DeserializeObject<dynamic>(response.Content);
+
+                string location = jsonResponse.location.name;
+                string country = jsonResponse.location.country;
+                double temperature = jsonResponse.current.temperature;
+                string weatherDescription = jsonResponse.current.weather_descriptions[0];
+                string timeRaw = jsonResponse.location.localtime;
+                string dayDesc = "";
+                DateTime localTime;
+                if (DateTime.TryParse(timeRaw, out localTime))
+                {
+                    string timeOnly = localTime.ToString("HH:mm:ss");
+                    if (string.Compare(timeOnly, "00:00:01") >= 0 && string.Compare(timeOnly, "05:00:00") <= 0)
+                    {
+                        dayDesc = "in the night";
+                    }
+                    else if (string.Compare(timeOnly, "05:00:01") >= 0 && string.Compare(timeOnly, "12:00:00") <= 0)
+                    {
+                        dayDesc = "in the morning";
+                    }
+                    else if (string.Compare(timeOnly, "12:00:01") >= 0 && string.Compare(timeOnly, "18:00:00") <= 0)
+                    {
+                        dayDesc = "in the afternoon";
+                    }
+                    else if (string.Compare(timeOnly, "18:00:01") >= 0 && string.Compare(timeOnly, "23:59:59") <= 0)
+                    {
+                        dayDesc = "in the evening";
+                    }
+
+                    Console.WriteLine($"The current weather in {location}, {country} is {temperature}°C - {weatherDescription}. It's currently {timeOnly} {dayDesc}, in {country}");
+                }
+                else
+                {
+                    Console.WriteLine("Error: " + response.ErrorMessage);
+                }
+                Console.ReadLine();
+            }
+        }
+    }
+}
