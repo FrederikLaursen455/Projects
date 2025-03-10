@@ -1,0 +1,307 @@
+using System;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using Npgsql;
+
+namespace DataBaseProgram
+{
+    class DataBaseMain
+    {
+        delegate void DatabaseAction();
+
+        static void Main()
+        {
+            string? readresult;
+            string first = "";
+            string second = "";
+            int idnumber;
+            string endString = "";
+            string ConnectString = "Host=localhost;Username=postgres;Password=REDACTED;Database=REDACTED";
+            using (var conn = new NpgsqlConnection(ConnectString))
+            {
+                conn.Open();
+
+                using (var cmd = new NpgsqlCommand("SELECT \"FirstName\", \"LastName\", \"IDs\" FROM \"userdatanew\"", conn))
+                {
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.HasRows)
+                        {
+                            while (reader.Read())
+                            {
+                                string firstName = reader.GetString(0);
+                                string lastName = reader.GetString(1);
+                                int idNew = reader.GetInt32(2);
+                                endString = firstName + " " + lastName;
+                            }
+                        }
+                    }
+                }
+            }
+            Console.Clear();
+            Console.WriteLine("Welcome to the Tømmerby Inc. employee user database");
+            Console.WriteLine("1. Add a new user");
+            Console.WriteLine("2. Show all users");
+            Console.WriteLine("3. See total user count");
+            Console.WriteLine("4. Find a user");
+            Console.WriteLine("5. Delete a user");
+            readresult = Console.ReadLine();
+            switch (readresult)
+            {
+                case "1":
+                    Console.Clear();
+                    Console.WriteLine("Enter the user's first name");
+                    first = Console.ReadLine();
+                    Console.WriteLine("Enter the user's last name");
+                    second = Console.ReadLine();
+                    AddingMethod(first, second);
+                    Console.WriteLine("User added successfully!");
+                    Console.ReadLine();
+                    Main();
+                    break;
+                case "2":
+                    DatabaseAction Databasemethod = ReaderMethod;
+                    Console.Clear();
+                    Databasemethod();
+                    Main();
+                    break;
+                case "3":
+                    Console.Clear();
+                    CounterMethod();
+                    Main();
+                    break;
+                case "4":
+                    Console.Clear();
+                    Console.WriteLine("1. Find a user by their ID");
+                    Console.WriteLine("2. Find a user by their name");
+                    readresult = Console.ReadLine();
+                    switch (readresult)
+                    {
+                        case "1":
+                            Console.Clear();
+                            Console.WriteLine("Enter ID to find user");
+                            readresult = Console.ReadLine();
+                            if (int.TryParse(readresult, out int id))
+                            {
+                                ViewUserByID(id);
+                            }
+                            else
+                            {
+                                Console.WriteLine("Not a valid ID number");
+                                Console.ReadLine();
+                                Main();
+                            }
+                            break;
+                        case "2":
+                            Console.Clear();
+                            Console.WriteLine("Enter first name");
+                            first = Console.ReadLine();
+                            Console.WriteLine("Enter last name");
+                            second = Console.ReadLine();
+                            ViewUserByName(first, second);
+                            Main();
+                            break;
+                    }
+                    break;
+                case "5":
+                    Console.Clear();
+                    Console.WriteLine("1. Get an overview of all current users");
+                    Console.WriteLine("2. Delete user directly from ID");
+                    readresult = Console.ReadLine();
+                    switch (readresult)
+                    {
+                        case "1":
+                            Console.Clear();
+                            ReaderMethod();
+                            Console.WriteLine("Enter ID to remove the user");
+                            readresult = Console.ReadLine();
+                            if (int.TryParse(readresult, out idnumber))
+                            {
+                                DeletingMethod(idnumber);
+                                Console.WriteLine("User deleted successfully!");
+                                Console.ReadLine();
+                            }
+                            else
+                            {
+                                Console.WriteLine("Invalid ID entered.");
+                                Console.ReadLine();
+                            }
+                            Main();
+                            break;
+                        case "2":
+                            Console.Clear();
+                            Console.WriteLine("Enter ID to remove the user");
+                            readresult = Console.ReadLine();
+                            if (int.TryParse(readresult, out idnumber))
+                            {
+                                DeletingMethod(idnumber);
+                                Console.WriteLine($"User: {endString} deleted successfully!");
+                                Console.ReadLine();
+                            }
+                            else
+                            {
+                                Console.WriteLine("Invalid ID entered");
+                                Console.ReadLine();
+                            }
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        static void AddingMethod(string first, string second)
+        {
+            string ConnectString = "Host=localhost;Username=postgres;Password=REDACTED!;Database=REDACTED";
+
+            using (var conn = new NpgsqlConnection(ConnectString))
+            {
+                conn.Open();
+
+                string query = "INSERT INTO userdatanew (\"FirstName\", \"LastName\") VALUES (@first, @second)";
+
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("first", first);
+                    cmd.Parameters.AddWithValue("second", second);
+
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+        static void DeletingMethod(int ID)
+        {
+            string ConnectString = "Host=localhost;Username=postgres;Password=REDACTED!;Database=REDACTED";
+
+            using (var conn = new NpgsqlConnection(ConnectString))
+            {
+                conn.Open();
+
+                string query = "DELETE FROM userdatanew WHERE \"IDs\" = @id";
+
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("id", ID);
+
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+        static void ReaderMethod()
+        {
+            string ConnectString = "Host=localhost;Username=postgres;Password=REDACTED!;Database=REDACTED";
+
+            using (var conn = new NpgsqlConnection(ConnectString))
+            {
+                conn.Open();
+
+                using (var cmd = new NpgsqlCommand("SELECT \"FirstName\", \"LastName\", \"IDs\" FROM \"userdatanew\"", conn))
+                {
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.HasRows)
+                        {
+                            while (reader.Read())
+                            {
+                                string firstName = reader.GetString(0);
+                                string lastName = reader.GetString(1);
+                                int id = reader.GetInt32(2);
+                                Console.WriteLine("User ID: " + id + "\t" + firstName + " " + lastName);
+                                Console.ReadLine();
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("No users found");
+                            Console.ReadLine();
+                        }
+                    }
+                }
+            }
+            Console.WriteLine("Sequence finished");
+        }
+        static void CounterMethod()
+        {
+            string ConnectString = "Host=localhost;Username=postgres;Password=REDACTED!;Database=REDACTED";
+
+            using (var conn = new NpgsqlConnection(ConnectString))
+            {
+                conn.Open();
+
+                using (var cmd = new NpgsqlCommand("SELECT COUNT(*) FROM \"userdatanew\"", conn))
+                {
+                    int userCount = Convert.ToInt32(cmd.ExecuteScalar());
+                    Console.WriteLine($"Total users: {userCount}");
+                    Console.ReadLine();
+                }
+            }
+        }
+        static void ViewUserByID(int id)
+        {
+            string ConnectString = "Host=localhost;Username=postgres;Password=REDACTED!;Database=REDACTED";
+
+            using (var conn = new NpgsqlConnection(ConnectString))
+            {
+                conn.Open();
+
+                using (var cmd = new NpgsqlCommand("SELECT \"FirstName\", \"LastName\", \"IDs\" FROM \"userdatanew\" WHERE \"IDs\" = @id", conn))
+                {
+                    cmd.Parameters.AddWithValue("id", id);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.HasRows)
+                        {
+                            while (reader.Read())
+                            {
+                                string firstName = reader.GetString(0);
+                                string lastName = reader.GetString(1);
+                                int userID = reader.GetInt32(2);
+                                Console.WriteLine($"User ID: {userID}\t{firstName} {lastName}");
+                                Console.ReadLine();
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("No user found by that ID");
+                            Console.ReadLine();
+                        }
+                    }
+                }
+            }
+        }
+        static void ViewUserByName(string first, string second)
+        {
+            string ConnectString = "Host=localhost;Username=postgres;Password=REDACTED!;Database=REDACTED";
+
+            using (var conn = new NpgsqlConnection(ConnectString))
+            {
+                conn.Open();
+
+                using (var cmd = new NpgsqlCommand("SELECT \"IDs\" FROM \"userdatanew\" WHERE \"FirstName\" = @first AND \"LastName\" = @second", conn))
+                {
+                    cmd.Parameters.AddWithValue("first", first);
+                    cmd.Parameters.AddWithValue("second", second);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.HasRows)
+                        {
+                            while (reader.Read())
+                            {
+                                int userID = reader.GetInt32(0);
+                                Console.WriteLine($"User ID: {userID}\t{first} {second}");
+                                Console.ReadLine();
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("No user found by that name");
+                            Console.ReadLine();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
